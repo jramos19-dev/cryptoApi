@@ -31,6 +31,11 @@
         </div>
       </div>
 
+      <div class="mt-8 bg-gray-700 p-6 rounded-lg">
+        <h2 class="text-2xl font-bold mb-4">Price History (7 Days)</h2>
+        <PriceChart :coinId="currency.uuid || route.params.id" />
+      </div>
+
       <div class="mt-8">
         <h2 class="text-2xl font-bold mb-4">Description</h2>
         <p class="text-gray-300">{{ currency.description || 'No description available.' }}</p>
@@ -50,14 +55,20 @@
 </template>
 
 <script setup>
-import { onMounted } from "vue"
+import { onMounted, watch } from "vue"
 import { useRoute } from "vue-router"
 import { currency, getCurrency, cleanCurrency } from "../helpers/useCurrencies"
+import PriceChart from "../components/PriceChart.vue"
 
 const route = useRoute()
 
 onMounted(() => {
+  console.log('Details view mounted, id:', route.params.id)
   cleanCurrency()
   getCurrency(route.params.id)
+})
+
+watch(currency, (newCurrency) => {
+  console.log('Currency data updated:', newCurrency)
 })
 </script>
