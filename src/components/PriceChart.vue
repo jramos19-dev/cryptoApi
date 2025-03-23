@@ -1,7 +1,12 @@
 <template>
   <div class="chart-container">
     <Line v-if="loaded" :data="chartData" :options="chartOptions" />
-    <div v-else class="text-center text-gray-500">Loading chart data...</div>
+    <div v-else class="flex items-center justify-center h-full text-gray-500">
+      <div class="text-center">
+        <div class="mb-2">Loading price history...</div>
+        <div v-if="error" class="text-red-500 text-sm">{{ error }}</div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -9,6 +14,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { Line } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
+import axios from 'axios'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
@@ -20,6 +26,15 @@ const props = defineProps({
 })
 
 const loaded = ref(false)
+const error = ref('')
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  headers: {
+    'x-access-token': import.meta.env.VITE_COINRANKING_API_KEY,
+  },
+})
+
 const chartData = ref({
   labels: [],
   datasets: [{
@@ -39,44 +54,74 @@ const chartOptions = {
   plugins: {
     legend: {
       display: false
+    },
+    tooltip: {
+      mode: 'index',
+      intersect: false,
+      callbacks: {
+        label: function(context) {
+          return `$${context.parsed.y.toFixed(2)}`
+        }
+      }
     }
   },
   scales: {
     y: {
       beginAtZero: false,
       grid: {
-        color: 'rgba(0, 0, 0, 0.1)'
+        color: 'rgba(255, 255, 255, 0.1)'
+      },
+      ticks: {
+        callback: function(value) {
+          return '$' + value.toFixed(2)
+        },
+        color: 'rgba(255, 255, 255, 0.7)'
       }
     },
     x: {
       grid: {
         display: false
+      },
+      ticks: {
+        color: 'rgba(255, 255, 255, 0.7)'
       }
     }
+  },
+  interaction: {
+    intersect: false,
+    mode: 'index'
   }
 }
 
 const fetchChartData = async () => {
   try {
+    error.value = ''
     loaded.value = false
-    console.log('Fetching data for coin:', props.coinId)
-    const response = await fetch(`https://api.coingecko.com/api/v3/coins/${props.coinId}/market_chart?vs_currency=usd&days=7&interval=daily`)
-    const data = await response.json()
+    console.log('Fetching price history for coin:', props.coinId)
     
-    if (data.prices && Array.isArray(data.prices)) {
-      chartData.value.labels = data.prices.map(price => {
-        const date = new Date(price[0])
+    const response = await api.get(`/coin/${props.coinId}/history`, {
+      params: {
+        timePeriod: '7d'
+      }
+    })
+    
+    const history = response.data.data.history
+    if (history && Array.isArray(history)) {
+      chartData.value.labels = history.map(point => {
+        const date = new Date(point.timestamp * 1000)
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       })
       
-      chartData.value.datasets[0].data = data.prices.map(price => price[1])
+      chartData.value.datasets[0].data = history.map(point => parseFloat(point.price))
       loaded.value = true
       console.log('Chart data loaded:', chartData.value)
     } else {
-      console.error('Invalid data format received:', data)
+      error.value = 'No price history available'
+      console.error('Invalid history data format:', response.data)
     }
   } catch (error) {
-    console.error('Error fetching chart data:', error)
+    error.value = 'Failed to load price history'
+    console.error('Error fetching price history:', error)
   }
 }
 
