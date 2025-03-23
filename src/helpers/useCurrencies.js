@@ -4,10 +4,9 @@ import axios from "axios"
 export const searchCurrency = ref("")
 
 const api = axios.create({
-  baseURL: "https://api.blockfacts.io/api/v1/assets",
+  baseURL: import.meta.env.VITE_API_URL,
   headers: {
-    "X-API-KEY": import.meta.env.apiKey,
-    "X-API-SECRET": import.meta.env.secret,
+    'x-access-token': import.meta.env.VITE_COINRANKING_API_KEY,
   },
 })
 
@@ -16,19 +15,19 @@ export const currency = ref()
 
 export const getCurrencies = async () => {
   try {
-    const response = await api()
-    currencies.value = response.data
+    const response = await api.get('/coins')
+    currencies.value = response.data.data.coins
   } catch (error) {
-    console.log(error)
+    console.error('Error fetching currencies:', error)
   }
 }
 
 export const getCurrency = async (id) => {
   try {
-    const response = await api(id)
-    currency.value = response.data
+    const response = await api.get(`/coin/${id}`)
+    currency.value = response.data.data.coin
   } catch (error) {
-    console.log(error)
+    console.error('Error fetching currency details:', error)
   }
 }
 

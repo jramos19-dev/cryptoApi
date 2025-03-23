@@ -1,25 +1,63 @@
 <template>
-  <div
-    v-if="currency"
-    class="text-gray-100 text-center grid justify-items-center"
-  >
-    <h1>Details of Crypto Id: {{ id }}</h1>
+  <div v-if="currency" class="py-8">
+    <div class="bg-gray-800 rounded-lg p-6">
+      <div class="flex items-center space-x-6 mb-6">
+        <img :src="currency.iconUrl" :alt="currency.name" class="w-16 h-16" />
+        <div>
+          <h1 class="text-4xl font-bold">{{ currency.name }}</h1>
+          <p class="text-xl text-gray-400">{{ currency.symbol }}</p>
+        </div>
+      </div>
 
-    <div class="mt-6 grid bg-green-500 w-72 h-72">
-      <p>More information about {{ currency.blockfactsTicker }}</p>
-      <ul>
-        <Li> Name: {{ currency.asset }} </Li>
-        <li>Type: {{ currency.type }}</li>
-      </ul>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-gray-700 p-4 rounded-lg">
+          <h3 class="text-lg text-gray-400 mb-2">Price</h3>
+          <p class="text-2xl font-bold">${{ parseFloat(currency.price).toFixed(2) }}</p>
+        </div>
+
+        <div class="bg-gray-700 p-4 rounded-lg">
+          <h3 class="text-lg text-gray-400 mb-2">24h Change</h3>
+          <p :class="[
+            'text-2xl font-bold',
+            parseFloat(currency.change) > 0 ? 'text-green-500' : 'text-red-500'
+          ]">
+            {{ currency.change }}%
+          </p>
+        </div>
+
+        <div class="bg-gray-700 p-4 rounded-lg">
+          <h3 class="text-lg text-gray-400 mb-2">Market Cap</h3>
+          <p class="text-2xl font-bold">${{ parseFloat(currency.marketCap).toLocaleString() }}</p>
+        </div>
+      </div>
+
+      <div class="mt-8">
+        <h2 class="text-2xl font-bold mb-4">Description</h2>
+        <p class="text-gray-300">{{ currency.description || 'No description available.' }}</p>
+      </div>
     </div>
-  </div>
 
-  <div v-else class="text-2xl text-gray-100 text-center">Loading....</div>
+    <router-link 
+      to="/" 
+      class="inline-block mt-6 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
+    >
+      Back to List
+    </router-link>
+  </div>
+  <div v-else class="py-8 text-center">
+    <p class="text-xl">Loading...</p>
+  </div>
 </template>
 
 <script setup>
+import { onMounted } from "vue"
 import { useRoute } from "vue-router"
-import { currency } from "../helpers/useCurrencies"
+import { currency, getCurrency, cleanCurrency } from "../helpers/useCurrencies"
 
-const id = useRoute().params.id
+const route = useRoute()
+
+onMounted(() => {
+  cleanCurrency()
+  getCurrency(route.params.id)
+})
 </script>
